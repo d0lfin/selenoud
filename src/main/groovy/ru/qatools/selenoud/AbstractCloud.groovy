@@ -62,7 +62,7 @@ abstract class AbstractCloud implements Cloud {
             LOG.info('[{}:{}] [SESSION_ATTEMPTED] [{}]', browser, version, containerName)
 
             try {
-                final container = launchContainer(browser, version, containerName)
+                final container = launchContainer(browser, version, containerName, caps)
                 LOG.info('[{}:{}] [CONTAINER_CREATED] [{}] [{}]', browser, version, containerName, container.id)
                 createSession(request, response, client, body, waitForNode(container).orElseThrow({
                     new RuntimeException("Failed to launch container and create session for ${containerName}!")
@@ -150,7 +150,7 @@ abstract class AbstractCloud implements Cloud {
         inputStreamToResponse(logCollector.get(sessionId.split(':')[0]), response)
     }
 
-    protected abstract Container launchContainer(String browserName, String browserVersion, String name)
+    protected abstract Container launchContainer(String browserName, String browserVersion, String name, Map<String, String> caps)
 
     protected abstract void removeContainer(String containerName)
 

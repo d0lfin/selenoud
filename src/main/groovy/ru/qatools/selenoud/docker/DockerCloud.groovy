@@ -4,7 +4,6 @@ import com.spotify.docker.client.DefaultDockerClient
 import com.spotify.docker.client.DockerClient
 import com.spotify.docker.client.exceptions.DockerException
 import com.spotify.docker.client.LogStream
-import com.spotify.docker.client.messages.ContainerConfig
 import com.spotify.docker.client.messages.ContainerCreation
 import com.spotify.docker.client.messages.HostConfig
 import groovy.transform.CompileStatic
@@ -45,7 +44,7 @@ class DockerCloud extends AbstractCloud {
     }
 
     @Override
-    Container launchContainer(String browserName, String browserVersion, String name) {
+    Container launchContainer(String browserName, String browserVersion, String containerName, Map<String, String> caps) {
         final image = imagesProvider.image(browserName, browserVersion)
         if (!image) {
             throw new RuntimeException("Image for $browserName:$browserVersion not found in mapping!")
@@ -56,24 +55,30 @@ class DockerCloud extends AbstractCloud {
         }
         final isNetworkHost = NETWORK_MODE == 'host'
         final exposedPort = (isNetworkHost ? findFreePort() : CONTAINER_PORT) as int
-        ContainerConfig config = builder().env(imagesProvider.env(SELF_HOST, SELF_PORT, name, exposedPort) as String[])
-                .exposedPorts("$exposedPort/tcp")
-                .hostConfig(HostConfig.builder()
+        def binds = image.volumes as ArrayList
+        binds << '/dev/urandom:/dev/random'
+        final hostConfigBuilder = HostConfig.builder()
                 .publishAllPorts(true)
-                .binds(['/dev/urandom:/dev/random'])
+                .memory(image.memory)
+                .dns(image.dns as ArrayList)
+                .privileged(image.privileged)
+                .binds(binds)
                 .portBindings([:])
-                .shmSize(image.shmSize)
                 .networkMode(NETWORK_MODE)
-                .build())
+        def env = imagesProvider.env(SELF_HOST, SELF_PORT, containerName, exposedPort)
+        caps.each { name, value -> env << "SESSION_${name.replace('.', '_')}=${value.replace(" ", "\\ ")}".toString() }
+        final containerConfigBuilder = builder()
+                .env(env as String[])
+                .exposedPorts("$exposedPort/tcp")
+                .hostConfig(hostConfigBuilder.build())
                 .image(imageName)
-                .build()
-        ContainerCreation creation = docker().createContainer(config, name)
+        ContainerCreation creation = docker().createContainer(containerConfigBuilder.build(), containerName)
         docker().startContainer(creation.id())
         final info = docker().inspectContainer(creation.id())
         final ports = info.networkSettings().ports()
         final hostPort = (isNetworkHost || !ports) ? exposedPort :
                 parseInt(ports.get("${exposedPort}/tcp".toString()).get(0).hostPort())
-        new Container(id: creation.id(), name: name, browser: browserName,
+        new Container(id: creation.id(), name: containerName, browser: browserName,
                 version: browserVersion, port: hostPort, host: CLOUD_HOST)
     }
 

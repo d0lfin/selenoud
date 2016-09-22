@@ -16,5 +16,9 @@ class ImageConfig {
     static class Image {
         String image, path = "/wd/hub/"
         Long shmSize = 67108864L
+        boolean privileged = false
+        Long memory = 268435456L
+        def dns = []
+        def volumes = []
     }
 }
