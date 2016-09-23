@@ -66,7 +66,7 @@ class DockerCloud extends AbstractCloud {
                 .networkMode(NETWORK_MODE)
         final env = imagesProvider.env(SELF_HOST, SELF_PORT, containerName, exposedPort)
         final containerConfigBuilder = builder()
-                .env(env << 'CAPABILITIES=' + caps.collect { name, value -> "{$name}:{$value}"}.join(';').replace(" ", "\\ "))
+                .env(env << 'CAPABILITIES=' + caps.collect { name, value -> "$name:$value"}.join(';'))
                 .exposedPorts("$exposedPort/tcp")
                 .hostConfig(hostConfigBuilder.build())
                 .image(imageName)
