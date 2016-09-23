@@ -55,20 +55,18 @@ class DockerCloud extends AbstractCloud {
         }
         final isNetworkHost = NETWORK_MODE == 'host'
         final exposedPort = (isNetworkHost ? findFreePort() : CONTAINER_PORT) as int
-        def binds = image.volumes as ArrayList
-        binds << '/dev/urandom:/dev/random'
+        final binds = image.volumes.collect() as ArrayList
         final hostConfigBuilder = HostConfig.builder()
                 .publishAllPorts(true)
                 .memory(image.memory)
                 .dns(image.dns as ArrayList)
                 .privileged(image.privileged)
-                .binds(binds)
+                .binds(binds << '/dev/urandom:/dev/random')
                 .portBindings([:])
                 .networkMode(NETWORK_MODE)
-        def env = imagesProvider.env(SELF_HOST, SELF_PORT, containerName, exposedPort)
-        caps.each { name, value -> env << "SESSION_${name.replace('.', '_')}=${value.replace(" ", "\\ ")}".toString() }
+        final env = imagesProvider.env(SELF_HOST, SELF_PORT, containerName, exposedPort)
         final containerConfigBuilder = builder()
-                .env(env as String[])
+                .env(env << 'CAPABILITIES=' + caps.collect { name, value -> "{$name}:{$value}"}.join(';').replace(" ", "\\ "))
                 .exposedPorts("$exposedPort/tcp")
                 .hostConfig(hostConfigBuilder.build())
                 .image(imageName)
