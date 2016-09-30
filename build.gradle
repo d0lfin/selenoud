@@ -24,7 +24,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
-        classpath 'io.ratpack:ratpack-gradle:1.4.1'
+        classpath 'io.ratpack:ratpack-gradle:1.4.2'
         classpath 'se.transmode.gradle:gradle-docker:1.2'
     }
 }
@@ -35,7 +35,7 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.7.15'
     compile 'org.slf4j:slf4j-log4j12:1.7.15'
     compile 'com.google.code.gson:gson:2.7'
-    compile 'com.spotify:docker-client:5.0.2'
+    compile 'com.spotify:docker-client:6.0.0'
     compile 'org.apache.commons:commons-io:1.3.2'
     testCompile 'junit:junit:4.12'
 }

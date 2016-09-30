@@ -13,10 +13,6 @@ interface Cloud {
 
     def launch(Request origReq, Response response, HttpClient client)
 
-    def onNodeRegistered(Request request, Response response)
-
-    def onNodeUp(Request request, Response response)
-
     def proxy(String sessionId, Request request, Response response, HttpClient client)
 
     def proxy(String sessionId, Request request, Response response, HttpClient client, Closure call)

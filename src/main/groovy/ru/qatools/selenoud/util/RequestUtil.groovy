@@ -3,6 +3,8 @@ package ru.qatools.selenoud.util
 import groovy.transform.CompileStatic
 import ratpack.exec.Promise
 import ratpack.func.Action
+import ratpack.func.Function
+import ratpack.http.HttpMethod
 import ratpack.http.Request
 import ratpack.http.Response
 import ratpack.http.TypedData
@@ -21,7 +23,7 @@ import static ru.qatools.selenoud.util.Util.intProp
 @CompileStatic
 enum RequestUtil {
     public static final int MAX_READ_TIMEOUT = intProp('limit.readTimeoutSec', '60')
-    public static final int MAX_CONN_TIMEOUT = intProp('limit.connectTimeoutSec', '10')
+    public static final int MAX_CONN_TIMEOUT = intProp('limit.connectTimeoutSec', '30')
 
     static void proxyToUrl(String fullUrl, Request request, HttpClient client,
                            Promise<TypedData> body, Action<ReceivedResponse> handler) {
@@ -30,12 +32,22 @@ enum RequestUtil {
             client.request(url.toURI(), { RequestSpec spec ->
                 spec.headers.copy(request.headers)
                 spec.headers.remove('Host')
-                spec.headers.add('Host', url.host)
+                spec.headers.add('Host', url.authority)
                 spec.method(request.method.name)
                 spec.readTimeout(ofSeconds(MAX_READ_TIMEOUT))
                 spec.connectTimeout(ofSeconds(MAX_CONN_TIMEOUT))
                 spec.body.buffer(readBody.buffer)
-
+                spec.onRedirect(new Function<ReceivedResponse, Action<? super RequestSpec>>() {
+                    @Override
+                    Action<? super RequestSpec> apply(ReceivedResponse receivedResponse) throws Exception {
+                        return new Action<RequestSpec>() {
+                            @Override
+                            void execute(RequestSpec requestSpec) throws Exception {
+                                requestSpec.method(HttpMethod.GET)
+                            }
+                        }
+                    }
+                })
             } as Action).then(handler)
         }
     }

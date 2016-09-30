@@ -3,6 +3,7 @@ package ru.qatools.selenoud.util
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.CompileStatic
+import groovy.util.logging.Slf4j
 import ratpack.exec.Promise
 
 import static java.lang.Class.forName
@@ -10,6 +11,7 @@ import static java.lang.Class.forName
 /**
  * @author Ilya Sadykov
  */
+@Slf4j('LOG')
 @CompileStatic
 enum Util {
     public static final String PREFIX = prop('prefix', 'wd/hub/')
@@ -83,7 +85,7 @@ enum Util {
         try {
             "http://${host}:${port}".toURL().openStream().read() > 0
         } catch (IOException e) {
-            e.message.contains('HTTP')
+            e.message.toUpperCase().contains('HTTP')
         }
     }
 

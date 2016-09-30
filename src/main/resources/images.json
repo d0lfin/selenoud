@@ -1,19 +1,16 @@
 {
   "images": {
-    "chrome": {
-      "image": "selenium/node-chrome:latest",
-      "shmSize": 268435456
+    "Aphone:5.0": {
+      "image": "appium:latest"
     },
-    "firefox": {
-      "image": "selenium/node-firefox:latest",
-      "path": "/wd/hub/"
+    "Apad:5.0": {
+      "image": "appium:latest"
     }
   },
   "environment": [
-    "HUB_PORT_4444_TCP_ADDR=$hubHost",
-    "HUB_PORT_4444_TCP_PORT=$hubPort",
-    "REMOTE_HOST=$name",
-    "SE_OPTS=-port $port -Djava.security.egd=file:/dev/random",
-    "DISPLAY=:$port"
+    "PORT=$port",
+    "CONTAINER_NAME=$name",
+    "HUB_HOST=$hubHost",
+    "HUB_PORT=$hubPort"
   ]
 }

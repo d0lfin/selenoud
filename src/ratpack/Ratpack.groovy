@@ -1,4 +1,5 @@
 import ratpack.error.ServerErrorHandler
+import ratpack.handling.RequestLogger
 import ratpack.http.client.HttpClient
 import ru.qatools.selenoud.Cloud
 import ru.qatools.selenoud.ErrorHandler
@@ -20,6 +21,8 @@ ratpack {
     }
 
     handlers {
+        all RequestLogger.ncsa()
+
         post("${PREFIX}session") { HttpClient client ->
             registry.get(Cloud).launch(request, response, client)
         }
@@ -30,15 +33,6 @@ ratpack {
 
         delete("${PREFIX}session/:sessionId") { HttpClient client ->
             registry.get(Cloud).delete(pathTokens.sessionId, request, response, client)
-        }
-
-        post('grid/register') {
-            registry.get(Cloud).onNodeRegistered(request, response)
-        }
-
-        get('grid/api/proxy') {
-            registry.get(Cloud).onNodeUp(request, response)
-            render '{"success":true}'
         }
 
         get('log/:sessionId') {
@@ -55,6 +49,14 @@ ratpack {
 
         get('ping') {
             render 'OK'
+        }
+
+        post('grid/register') {
+            render 'ok'
+        }
+
+        get('grid/api/proxy') {
+            render '{"success": true}'
         }
 
     }

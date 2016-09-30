@@ -10,6 +10,7 @@ import ratpack.http.client.HttpClient
 import ru.qatools.selenoud.util.TimedCountDownLatch
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 import static java.lang.System.currentTimeMillis
 import static java.util.Optional.ofNullable
@@ -72,32 +73,6 @@ abstract class AbstractCloud implements Cloud {
                 safeRemoveContainer(containerName)
                 response.status(500)
                 response.send('Failed to launch container: {}', e.message)
-            }
-        }
-    }
-
-    @Override
-    def onNodeRegistered(Request request, Response response) {
-        LOG.trace('[NODE_REGISTER] [{}]', request.rawUri)
-        request.body.then {
-            def registerMsg = fromJson(it.inputStream)
-            def containerName = (registerMsg.configuration as Map)?.url as String
-            LOG.debug("[NODE_REGISTERED] [$containerName]")
-            if (containerName) {
-                launching[containerName]?.countDown()
-            }
-            response.send(toJson([:]))
-        }
-    }
-
-    @Override
-    def onNodeUp(Request request, Response response) {
-        request.body.then {
-            def containerName = request.queryParams.get('id')
-            LOG.debug("[NODE_UP] [$containerName]")
-            if (!launching.containsKey(containerName) && !launched.containsKey(containerName)) {
-                LOG.warn("Found lost container: ${containerName}, removing it!")
-                safeRemoveContainer(containerName)
             }
         }
     }
@@ -168,13 +143,14 @@ abstract class AbstractCloud implements Cloud {
     }
 
     protected Thread watchSocketOpen(Container container) {
+        LOG.info("Wait for socket wiil be openned ${container.host}:${container.port}")
         Thread.start {
             final long started = currentTimeMillis()
             boolean success
             try {
                 while ((MAX_STARTUP_SEC * 1000 as long) > currentTimeMillis() - started &&
                         !(success = isHttpListen(container.host, container.port))) {
-                    sleep 5
+                    sleep SECONDS.toMillis(1)
                 }
                 if (success) {
                     launching[container.name]?.countDown()
