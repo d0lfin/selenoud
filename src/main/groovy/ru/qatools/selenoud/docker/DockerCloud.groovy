@@ -46,7 +46,7 @@ class DockerCloud extends AbstractCloud {
     @Override
     Container launchContainer(String browserName, String browserVersion, String containerName, Map<String, String> caps) {
         final image = imagesProvider.image(browserName, browserVersion)
-        if (!image) {
+        if (!image || caps.get("abi") == null || !caps.get("abi").equals("X86")) {
             throw new RuntimeException("Image for $browserName:$browserVersion not found in mapping!")
         }
         final String imageName = image.image
