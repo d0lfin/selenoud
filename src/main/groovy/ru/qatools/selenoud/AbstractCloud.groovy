@@ -10,7 +10,7 @@ import ratpack.http.client.HttpClient
 import ru.qatools.selenoud.util.TimedCountDownLatch
 
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.Semaphore
 
 import static java.lang.System.currentTimeMillis
 import static java.util.Optional.ofNullable
@@ -34,6 +34,7 @@ abstract class AbstractCloud implements Cloud {
     protected final Map<String, TimedCountDownLatch> launching = new ConcurrentHashMap<>()
     protected final LogCollector logCollector = newInstanceOf('logCollector', LogCollector.DEFAULT)
     protected final ImageNameProvider imagesProvider = newInstanceOf('imagesProvider', ImageNameProvider.DEFAULT)
+    protected final Semaphore launch = new Semaphore(1, true);
 
     AbstractCloud() {
         runWatcher()
@@ -63,6 +64,7 @@ abstract class AbstractCloud implements Cloud {
             LOG.info('[{}:{}] [SESSION_ATTEMPTED] [{}]', browser, version, containerName)
 
             try {
+                launch.acquire()
                 final container = launchContainer(browser, version, containerName, caps)
                 LOG.info('[{}:{}] [CONTAINER_CREATED] [{}] [{}]', browser, version, containerName, container.id)
                 createSession(request, response, client, body, waitForNode(container).orElseThrow({
@@ -71,6 +73,7 @@ abstract class AbstractCloud implements Cloud {
             } catch (Exception e) {
                 LOG.error('[{}:{}] [CONTAINER_ERROR] [{}] : {}', browser, version, containerName, e.message, e)
                 safeRemoveContainer(containerName)
+                launch.release()
                 response.status(500)
                 response.send('Failed to launch container: {}', e.message)
             }
@@ -134,10 +137,12 @@ abstract class AbstractCloud implements Cloud {
         if (!launching[container.name]?.await(MAX_STARTUP_SEC, SECONDS)) {
             LOG.warn('[{}:{}] [NODE_TIMEOUT] [{}]', container.browser, container.version, container.name)
             safeRemoveContainer(container)
+            launch.release()
             ofNullable(null as Container)
         } else {
             LOG.info('[{}:{}] [NODE_STARTED] [{}]', container.browser, container.version, container.name)
             container.with { path = imagesProvider.image(browser, version).path }
+            launch.release()
             ofNullable(container)
         }
     }
